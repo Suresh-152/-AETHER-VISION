@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHER-VISION // AI Classroom Monitoring</title>
+    <!-- NieR Automata Fonts: Cinzel, Share Tech Mono & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js & MediaPipe Hands for Real-time Finger Drawing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body class="nier-military">
+    <!-- Authentic Scanlines & Background Geometric Concentric Lines -->
+    <div class="nier-scanlines"></div>
+    <div class="nier-noise-vignette"></div>
+    <div class="nier-bg-decorations">
+        <div class="decor-circle-1"></div>
+        <div class="decor-circle-2"></div>
+    </div>
+
+    <!-- Authentic NieR Triangle Ribbon Trim -->
+    <div class="nier-triangle-ribbon"></div>
+
+    <!-- Floating Notification Banner -->
+    <div class="dynamic-island-container">
+        <div class="dynamic-island" id="dynamic-island">
+            <div class="island-collapsed">
+                <span class="status-indicator live-pulse"></span>
+                <span class="island-text" id="island-main-text">Autonomous Classroom Surveillance Active</span>
+                <span class="island-badge" id="island-badge">ONLINE</span>
+            </div>
+            <div class="island-expanded" id="island-expanded">
+                <div class="island-detail" id="island-detail-content">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Air Draw Active • Pinch Thumb & Index to Draw • Snap again to Clear</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="nier-navbar">
+        <div class="nav-brand">
+            <div class="app-icon">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div class="brand-titles">
+                <span class="app-name">AETHER-VISION <span class="app-sub-badge">AI</span></span>
+                <span class="app-caption">Smart Classroom Monitoring & Attention Tracking</span>
+            </div>
+        </div>
+
+        <!-- Mode Switcher -->
+        <div class="segmented-control">
+            <button class="segment-btn active" id="btn-src-cam0" title="Switch to Built-in Laptop Camera">
+                <span><i class="fa-solid fa-camera"></i> Laptop Camera</span>
+            </button>
+            <button class="segment-btn" id="btn-src-sim" title="Switch to Simulation Demo">
+                <span><i class="fa-solid fa-desktop"></i> Simulation</span>
+            </button>
+            <button class="segment-btn" id="btn-src-upload" title="Upload Video">
+                <span><i class="fa-solid fa-upload"></i> Upload Video</span>
+            </button>
+            <input type="file" id="video-file-input" accept="video/*" style="display: none;">
+        </div>
+
+        <!-- Command Actions -->
+        <div class="nav-controls">
+            <!-- Air Draw Button (Gesture / Snap) -->
+            <button class="nier-btn nier-btn-secondary" id="btn-air-draw" title="Air Draw: Snap fingers to toggle & pinch to draw">
+                <i class="fa-solid fa-pen-nib"></i>
+                <span id="air-draw-btn-label">Air Draw</span>
+            </button>
+
+            <!-- Export Session Report -->
+            <button class="nier-btn nier-btn-primary" id="btn-report-export">
+                <i class="fa-solid fa-download"></i>
+                <span>Export Report</span>
+            </button>
+
+            <!-- Clock -->
+            <div class="nier-clock-pill">
+                <span id="digital-clock">00:00:00</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="nier-layout">
+        <!-- TOP: Status Cards styled with clean, normal names -->
+        <section class="kpi-grid">
+            <!-- 1. Total Attendance -->
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-label">Current Attendance</span>
+                    <div class="kpi-icon-wrap"><i class="fa-solid fa-users"></i></div>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-val-row">
+                        <span class="kpi-val" id="val-headcount">0</span>
+                        <span class="kpi-unit">students</span>
+                    </div>
+                    <span class="kpi-caption" id="val-peak">Peak: 0 seated</span>
+                </div>
+            </div>
+
+            <!-- 2. Class Engagement Index & Status -->
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-label">Attention Gauge</span>
+                    <div class="kpi-icon-wrap"><i class="fa-solid fa-gauge-high"></i></div>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-val-row">
+                        <span class="kpi-val text-sage" id="val-attention">100</span>
+                        <span class="kpi-unit">%</span>
+                    </div>
+                    <div class="nier-progress-track">
+                        <div class="nier-progress-bar" id="bar-attention" style="width: 100%;"></div>
+                    </div>
+                    <span class="kpi-caption" id="val-attention-status">Attentive & Focused</span>
+                </div>
+            </div>
+
+            <!-- 3. Talking / Conversations Detected -->
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-label">Talking / Speech</span>
+                    <div class="kpi-icon-wrap"><i class="fa-solid fa-comments"></i></div>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-val-row">
+                        <span class="kpi-val text-violet" id="val-talking">0</span>
+                        <span class="kpi-unit">talking</span>
+                    </div>
+                    <span class="kpi-caption" id="talking-sub-alert">No active talking</span>
+                </div>
+            </div>
+
+            <!-- 4. Mobile Phone Violations -->
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-label">Using Phone</span>
+                    <div class="kpi-icon-wrap"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-val-row">
+                        <span class="kpi-val text-crimson" id="val-phones">0</span>
+                        <span class="kpi-unit">phones</span>
+                    </div>
+                    <span class="kpi-caption" id="phone-sub-alert">No phones detected</span>
+                </div>
+            </div>
+
+            <!-- 5. Books & Notebooks -->
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-label">Books & Notebooks</span>
+                    <div class="kpi-icon-wrap"><i class="fa-solid fa-book-open"></i></div>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-val-row">
+                        <span class="kpi-val text-blue" id="val-notes">0</span>
+                        <span class="kpi-unit">items</span>
+                    </div>
+                    <span class="kpi-caption" id="book-sub-alert">Study material in use</span>
+                </div>
+            </div>
+
+            <!-- 6. Head Down / Sleeping -->
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-label">Head Down / Sleeping</span>
+                    <div class="kpi-icon-wrap"><i class="fa-solid fa-moon"></i></div>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-val-row">
+                        <span class="kpi-val text-amber" id="val-sleeping">0</span>
+                        <span class="kpi-unit">students</span>
+                    </div>
+                    <span class="kpi-caption" id="sleep-sub-alert">Normal posture</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER: Viewport & Right Analytics Column -->
+        <div class="workspace-main">
+            <!-- Left: Viewport -->
+            <div class="viewport-wrapper">
+                <div class="viewport-frame" id="viewport-frame">
+                    <!-- Stream Image -->
+                    <img id="live-stream-img" src="/video_feed" alt="Surveillance Feed" loading="eager">
+
+                    <!-- Interactive Transparent Air-Drawing Canvas -->
+                    <canvas id="drawing-canvas"></canvas>
+
+                    <!-- Finger Target Reticle (Follows finger when pen is up) -->
+                    <div class="finger-cursor" id="finger-cursor"></div>
+
+                    <!-- Warning Banner -->
+                    <div class="nier-alert-banner" id="apple-alert-banner">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span id="apple-alert-text">Phone Detected</span>
+                    </div>
+
+                    <!-- Reticle Accents -->
+                    <div class="viewport-hud-reticle"></div>
+                </div>
+
+                <!-- Viewport Control Bar -->
+                <div class="viewport-footer">
+                    <div class="footer-metrics">
+                        <span>Model: <strong id="hud-backend">YOLO11-Pose Dual</strong></span>
+                        <span>Hardware: <strong id="hud-device">RTX 3050 CUDA</strong></span>
+                        <span>Performance: <strong id="hud-fps">0 FPS</strong></span>
+                    </div>
+                    <div class="footer-actions">
+                        <button class="icon-control-btn" id="btn-mic-toggle" title="Snap Microphone Toggle">
+                            <i class="fa-solid fa-microphone" id="mic-icon"></i>
+                        </button>
+                        <button class="icon-control-btn" id="btn-fullscreen" title="Fullscreen Viewport">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Incident Audit Stream -->
+            <div class="sidebar-wrapper">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Incident Log</span>
+                    </div>
+                    <span class="sidebar-badge" id="incidents-total-badge">0 Events</span>
+                </div>
+
+                <div class="sidebar-body" id="incidents-container">
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fa-solid fa-check"></i></div>
+                        <span class="empty-title">All Clear</span>
+                        <span class="empty-sub">Active distractions, phone usage, and drowsiness incidents will be cataloged with evidence captures here.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM: Longitudinal Attention & Attendance Timeline -->
+        <section class="chart-wrapper">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Attention & Attendance Timeline</span>
+                    </div>
+                    <div class="chart-legend">
+                        <span class="legend-pill"><span class="legend-dot dot-ochre"></span> Attention Score (%)</span>
+                        <span class="legend-pill"><span class="legend-dot dot-sage"></span> Attendance Count</span>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="engagementChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Forensic Evidence Inspection Modal -->
+    <div class="apple-modal" id="evidence-modal">
+        <div class="modal-scrim" id="modal-backdrop"></div>
+        <div class="modal-panel">
+            <div class="modal-nav">
+                <span class="modal-heading" id="modal-title">Evidence Capture</span>
+                <button class="modal-close-icon" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-content-wrap">
+                <img id="modal-evidence-img" src="" alt="Forensic Evidence Capture">
+                <div class="modal-metadata-card" id="modal-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
